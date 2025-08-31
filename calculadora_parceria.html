@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Vendas</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1, h2 { text-align: center; }
+    select, input, button { padding: 8px; margin: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #222; color: #fff; }
+    .actions { text-align: center; margin-top: 20px; }
+    .recibos, .relatorios { margin-top: 40px; }
+    tfoot td { font-weight: bold; background: #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Sistema de Vendas</h1>
+
+  <div class="actions">
+    <select id="item-select"></select>
+    <input type="number" id="item-qtd" placeholder="Qtd" min="1" value="1">
+    <button onclick="adicionarCarrinho()">Adicionar ao Carrinho</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Preço S/Parceria</th>
+        <th>Preço C/Parceria</th>
+        <th>Qtd</th>
+        <th>Total S/Parceria</th>
+        <th>Total C/Parceria</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody id="carrinho"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4">Total Geral</td>
+        <td id="total-sem">R$ 0</td>
+        <td id="total-com">R$ 0</td>
+        <td>-</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="actions">
+    <button onclick="finalizarCompra()">Finalizar Compra</button>
+  </div>
+
+  <div class="recibos">
+    <h2>Recibos Gerados</h2>
+    <ul id="lista-recibos"></ul>
+  </div>
+
+  <div class="relatorios">
+    <h2>Relatórios</h2>
+    <p><strong>Diário:</strong> R$ <span id="rel-diario">0</span></p>
+    <p><strong>Semanal:</strong> R$ <span id="rel-semanal">0</span></p>
+    <p><strong>Mensal:</strong> R$ <span id="rel-mensal">0</span></p>
+  </div>
+
+  <!-- Biblioteca para exportar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const itens = [
+      { nome: "PISTOLA/PT/FN", sem: 550, com: 1100 },
+      { nome: "FUZIL/RIFLE", sem: 360, com: 720 },
+      { nome: "SMG/SUB", sem: 360, com: 720 },
+      { nome: "SNIPER", sem: 23333, com: 46666 },
+      { nome: "ESCOPETA/12", sem: 5500, com: 11000 }
+    ];
+
+    const select = document.getElementById("item-select");
+    itens.forEach((item, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = item.nome;
+      select.appendChild(opt);
+    });
+
+    let carrinho = [];
+    let recibos = JSON.parse(localStorage.getItem("recibos") || "[]");
+
+    function atualizarCarrinho() {
+      const tbody = document.getElementById("carrinho");
+      tbody.innerHTML = "";
+      let totalSem = 0, totalCom = 0;
+
+      carrinho.forEach((item, idx) => {
+        const subtotalSem = item.qtd * item.sem;
+        const subtotalCom = item.qtd * item.com;
+        totalSem += subtotalSem;
+        totalCom += subtotalCom;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.nome}</td>
+          <td>R$ ${item.sem}</td>
+          <td>R$ ${item.com}</td>
+          <td>${item.qtd}</td>
+          <td>R$ ${subtotalSem.toLocaleString()}</td>
+          <td>R$ ${subtotalCom.toLocaleString()}</td>
+          <td><button onclick="removerItem(${idx})">Remover</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      document.getElementById("total-sem").textContent = `R$ ${totalSem.toLocaleString()}`;
+      document.getElementById("total-com").textContent = `R$ ${totalCom.toLocaleString()}`;
+    }
+
+    function adicionarCarrinho() {
+      const i = parseInt(select.value);
+      const qtd = parseInt(document.getElementById("item-qtd").value);
+      if (!qtd || qtd <= 0) return;
+
+      carrinho.push({ ...itens[i], qtd });
+      atualizarCarrinho();
+    }
+
+    function removerItem(idx) {
+      carrinho.splice(idx, 1);
+      atualizarCarrinho();
+    }
+
+    async function gerarPDF(recibo) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.text("Recibo de Compra", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Cliente: ${recibo.cliente}`, 20, 30);
+      doc.text(`Data: ${new Date(recibo.data).toLocaleString()}`, 20, 40);
+
+      let y = 60;
+      doc.text("Itens:", 20, y);
+      y += 10;
+
+      recibo.itens.forEach(item => {
+        doc.text(`${item.nome} - Qtd: ${item.qtd} | S/Parceria: R$ ${item.qtd * item.sem} | C/Parceria: R$ ${item.qtd * item.com}`, 20, y);
+        y += 10;
+      });
+
+      y += 10;
+      doc.text(`Total S/Parceria: R$ ${recibo.totalSem.toLocaleString()}`, 20, y);
+      y += 10;
+      doc.text(`Total C/Parceria: R$ ${recibo.totalCom.toLocaleString()}`, 20, y);
+
+      doc.save(`Recibo_${recibo.cliente}_${Date.now()}.pdf`);
+    }
+
+    function finalizarCompra() {
+      if (carrinho.length === 0) return alert("Carrinho vazio!");
+
+      const cliente = prompt("Digite o nome do cliente:");
+      if (!cliente) return;
+
+      let totalSem = 0, totalCom = 0;
+      carrinho.forEach(item => {
+        totalSem += item.qtd * item.sem;
+        totalCom += item.qtd * item.com;
+      });
+
+      const recibo = {
+        cliente,
+        data: new Date().toISOString(),
+        totalSem,
+        totalCom,
+        itens: carrinho
+      };
+
+      recibos.push(recibo);
+      localStorage.setItem("recibos", JSON.stringify(recibos));
+      atualizarRecibos();
+      atualizarRelatorios();
+      gerarPDF(recibo);
+      carrinho = [];
+      atualizarCarrinho();
+    }
+
+    function atualizarRecibos() {
+      const ul = document.getElementById("lista-recibos");
+      ul.innerHTML = "";
+      recibos.forEach(r => {
+        const li = document.createElement("li");
+        const data = new Date(r.data).toLocaleString();
+        li.textContent = `${data} - ${r.cliente}: R$ ${r.totalSem.toLocaleString()} (S/Parceria) | R$ ${r.totalCom.toLocaleString()} (C/Parceria)`;
+        ul.appendChild(li);
+      });
+    }
+
+    function atualizarRelatorios() {
+      const agora = new Date();
+      let totalDiario = 0, totalSemanal = 0, totalMensal = 0;
+
+      recibos.forEach(r => {
+        const data = new Date(r.data);
+        if (data.toDateString() === agora.toDateString()) {
+          totalDiario += r.totalSem;
+        }
+        const diffDias = (agora - data) / (1000*60*60*24);
+        if (diffDias < 7) totalSemanal += r.totalSem;
+
+        if (data.getMonth() === agora.getMonth() && data.getFullYear() === agora.getFullYear()) {
+          totalMensal += r.totalSem;
+        }
+      });
+
+      document.getElementById("rel-diario").textContent = totalDiario.toLocaleString();
+      document.getElementById("rel-semanal").textContent = totalSemanal.toLocaleString();
+      document.getElementById("rel-mensal").textContent = totalMensal.toLocaleString();
+    }
+
+    atualizarRecibos();
+    atualizarRelatorios();
+  </script>
+</body>
+</html>
