@@ -491,13 +491,13 @@
             <div class="total-section">
                 <h3 class="total-title">TOTAL GERAL</h3>
                 <div class="total-grid">
-                    <div class="total-card green">
-                        <h4 class="green">COM PARCERIA</h4>
-                        <p class="green" id="total-with-partner">0K</p>
-                    </div>
                     <div class="total-card red">
                         <h4 class="red">SEM PARCERIA</h4>
                         <p class="red" id="total-without-partner">0K</p>
+                    </div>
+                    <div class="total-card green">
+                        <h4 class="green">COM PARCERIA</h4>
+                        <p class="green" id="total-with-partner">0K</p>
                     </div>
                 </div>
             </div>
@@ -631,16 +631,16 @@
                                    placeholder="Ex: 100">
                         </div>
                         <div class="form-group">
-                            <label class="form-label green">Preço C/ Parceria (K):</label>
-                            <input type="number" min="0" step="0.5" value="${data.priceWithPartner}" 
-                                   class="form-input" onchange="updatePrice('${key}', 'priceWithPartner', this.value)"
-                                   placeholder="Ex: 55.0">
-                        </div>
-                        <div class="form-group">
                             <label class="form-label red">Preço S/ Parceria (K):</label>
                             <input type="number" min="0" step="0.5" value="${data.priceWithoutPartner}" 
                                    class="form-input red-focus" onchange="updatePrice('${key}', 'priceWithoutPartner', this.value)"
                                    placeholder="Ex: 110.0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label green">Preço C/ Parceria (K):</label>
+                            <input type="number" min="0" step="0.5" value="${data.priceWithPartner}" 
+                                   class="form-input" onchange="updatePrice('${key}', 'priceWithPartner', this.value)"
+                                   placeholder="Ex: 55.0">
                         </div>
                     </div>
                 `;
@@ -668,7 +668,7 @@
                         <i data-lucide="package"></i>
                         <h3 class="card-title calculator">${data.name}</h3>
                         <span class="package-info">
-                            Cada ${data.packageSize} unid. - ${formatCurrency(data.priceWithPartner)}/${formatCurrency(data.priceWithoutPartner)}
+                            Cada ${data.packageSize} unid. - ${formatCurrency(data.priceWithoutPartner)}/${formatCurrency(data.priceWithPartner)}
                         </span>
                     </div>
                     <div class="form-grid">
@@ -689,16 +689,16 @@
                         </div>
                         <div class="form-group">
                             <div class="result-grid">
-                                <div class="result-card green">
-                                    <div class="result-header">
-                                        <span class="result-label green">C/ Parceria:</span>
-                                        <span class="result-value green">${formatCurrency(totalWithPartner)}</span>
-                                    </div>
-                                </div>
                                 <div class="result-card red">
                                     <div class="result-header">
                                         <span class="result-label red">S/ Parceria:</span>
                                         <span class="result-value red">${formatCurrency(totalWithoutPartner)}</span>
+                                    </div>
+                                </div>
+                                <div class="result-card green">
+                                    <div class="result-header">
+                                        <span class="result-label green">C/ Parceria:</span>
+                                        <span class="result-value green">${formatCurrency(totalWithPartner)}</span>
                                     </div>
                                 </div>
                             </div>
